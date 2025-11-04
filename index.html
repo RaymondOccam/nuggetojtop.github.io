@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>动态文字网页</title>
+    <style>
+        /* 黑色背景，全屏居中 */
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            background-color: #000; /* 黑色背景 */
+            display: flex;
+            align-items: center; /* 垂直居中 */
+            justify-content: center; /* 水平居中 */
+            overflow: hidden; /* 隐藏滚动条 */
+        }
+
+        /* 动态文字样式 */
+        .dynamic-text {
+            color: #fff; /* 白色文字，对比明显 */
+            font-size: 2.5rem; /* 文字大小，可调整 */
+            font-weight: bold;
+            /* 动画：左右移动 10 秒，匀速，无限循环 */
+            animation: move 10s linear infinite;
+            padding: 0 20px;
+        }
+
+        /* 鼠标悬浮时加速 */
+        .dynamic-text:hover {
+            animation: move 3s linear infinite;
+        }
+
+        /* 定义移动动画 */
+        @keyframes move {
+            0% {
+                transform: translateX(-30vw); /* 从左侧 30% 视口宽度处开始 */
+            }
+            100% {
+                transform: translateX(30vw); /* 移动到右侧 30% 视口宽度处 */
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 动态文字（可修改内容） -->
+    <div class="dynamic-text">极简动态网页 · 一行文字左右滑动</div>
+</body>
+</html>
