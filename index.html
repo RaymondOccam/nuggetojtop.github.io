@@ -2,49 +2,141 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>动态文字网页</title>
+    <title>简易丝织绘画 (WeaveSilk 复刻)</title>
     <style>
-        /* 黑色背景，全屏居中 */
-        body {
-            margin: 0;
-            padding: 0;
-            height: 100vh;
-            background-color: #000; /* 黑色背景 */
-            display: flex;
-            align-items: center; /* 垂直居中 */
-            justify-content: center; /* 水平居中 */
-            overflow: hidden; /* 隐藏滚动条 */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            background: #000; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            padding: 20px;
         }
-
-        /* 动态文字样式 */
-        .dynamic-text {
-            color: #fff; /* 白色文字，对比明显 */
-            font-size: 2.5rem; /* 文字大小，可调整 */
-            font-weight: bold;
-            /* 动画：左右移动 10 秒，匀速，无限循环 */
-            animation: move 10s linear infinite;
-            padding: 0 20px;
+        h1 { color: #fff; margin-bottom: 10px; font-size: 24px; }
+        .controls { 
+            color: #fff; 
+            margin-bottom: 10px; 
+            display: flex; 
+            gap: 20px; 
+            align-items: center;
         }
-
-        /* 鼠标悬浮时加速 */
-        .dynamic-text:hover {
-            animation: move 3s linear infinite;
+        button { 
+            padding: 5px 15px; 
+            border: none; 
+            border-radius: 4px; 
+            cursor: pointer; 
+            background: #4CAF50; 
+            color: #fff;
         }
-
-        /* 定义移动动画 */
-        @keyframes move {
-            0% {
-                transform: translateX(-30vw); /* 从左侧 30% 视口宽度处开始 */
-            }
-            100% {
-                transform: translateX(30vw); /* 移动到右侧 30% 视口宽度处 */
-            }
+        canvas { 
+            border: 1px solid #333; 
+            background: #000; 
+            cursor: crosshair;
         }
     </style>
 </head>
 <body>
-    <!-- 动态文字（可修改内容） -->
-    <div class="dynamic-text">极简动态网页 · 一行文字左右滑动</div>
+    <h1>丝织绘画</h1>
+    <div class="controls">
+        <div>颜色: <input type="color" id="colorPicker" value="#ff00ff"></div>
+        <div>粗细: <input type="range" id="lineWidth" min="1" max="10" value="2"></div>
+        <button id="clearBtn">清空画布</button>
+    </div>
+    <canvas id="weaveSilkCanvas"></canvas>
+
+    <script>
+        // 1. 初始化画布和参数
+        const canvas = document.getElementById('weaveSilkCanvas');
+        const ctx = canvas.getContext('2d');
+        const colorPicker = document.getElementById('colorPicker');
+        const lineWidth = document.getElementById('lineWidth');
+        const clearBtn = document.getElementById('clearBtn');
+
+        // 设置画布尺寸（居中显示，适配屏幕）
+        canvas.width = 800;
+        canvas.height = 800;
+        const centerX = canvas.width / 2; // 画布中心点X
+        const centerY = canvas.height / 2; // 画布中心点Y
+
+        // 绘画状态
+        let isDrawing = false;
+        let lastX = 0;
+        let lastY = 0;
+
+        // 2. 初始化画布（黑色背景）
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // 3. 核心：绘制对称线条（4轴对称）
+        function drawSymmetric(x, y) {
+            const color = colorPicker.value;
+            const width = lineWidth.value;
+
+            // 保存当前绘图状态
+            ctx.save();
+            ctx.strokeStyle = color;
+            ctx.lineWidth = width;
+            ctx.lineCap = 'round'; // 线条端点圆润
+            ctx.lineJoin = 'round'; // 线条拐角圆润
+
+            // 开始绘制路径（4个对称方向）
+            ctx.beginPath();
+            
+            // 方向1：原始位置（右上）
+            ctx.moveTo(lastX, lastY);
+            ctx.lineTo(x, y);
+            
+            // 方向2：水平对称（左上）
+            ctx.moveTo(2*centerX - lastX, lastY);
+            ctx.lineTo(2*centerX - x, y);
+            
+            // 方向3：垂直对称（右下）
+            ctx.moveTo(lastX, 2*centerY - lastY);
+            ctx.lineTo(x, 2*centerY - y);
+            
+            // 方向4：中心对称（左下）
+            ctx.moveTo(2*centerX - lastX, 2*centerY - lastY);
+            ctx.lineTo(2*centerX - x, 2*centerY - y);
+
+            // 执行绘制
+            ctx.stroke();
+            // 恢复绘图状态
+            ctx.restore();
+        }
+
+        // 4. 鼠标事件监听
+        // 鼠标按下：开始绘画
+        canvas.addEventListener('mousedown', (e) => {
+            isDrawing = true;
+            // 获取鼠标在画布上的坐标（修正画布偏移）
+            const rect = canvas.getBoundingClientRect();
+            lastX = e.clientX - rect.left;
+            lastY = e.clientY - rect.top;
+        });
+
+        // 鼠标移动：绘制线条（仅在按下时）
+        canvas.addEventListener('mousemove', (e) => {
+            if (!isDrawing) return;
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            drawSymmetric(x, y);
+            
+            // 更新上一个坐标点（实现连续线条）
+            lastX = x;
+            lastY = y;
+        });
+
+        // 鼠标松开/离开：结束绘画
+        canvas.addEventListener('mouseup', () => isDrawing = false);
+        canvas.addEventListener('mouseout', () => isDrawing = false);
+
+        // 5. 清空画布按钮事件
+        clearBtn.addEventListener('click', () => {
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        });
+    </script>
 </body>
 </html>
