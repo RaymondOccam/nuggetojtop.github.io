@@ -1,0 +1,71 @@
+.problem-content {
+    line-height: 1.8;
+    color: #333;
+    white-space: pre-line; /* 保留换行符 */
+}
+
+.sample-code {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 4px;
+    overflow-x: auto;
+    font-family: 'Consolas', monospace;
+    font-size: 14px;
+    color: #2c3e50;
+}
+
+.difficulty-tag {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 4px;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.difficulty-tag.easy {
+    background: #2ecc71;
+}
+
+.difficulty-tag.medium {
+    background: #f39c12;
+}
+
+.difficulty-tag.hard {
+    background: #e74c3c;
+}
+
+.status-tag {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 4px;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.status-tag.pending {
+    background: #3498db;
+}
+
+.status-tag.accepted {
+    background: #2ecc71;
+}
+
+.status-tag.wrong {
+    background: #e74c3c;
+}
+
+.status-tag.warning {
+    background: #f39c12;
+}
+
+.status-tag.error {
+    background: #9b59b6;
+}
+
+#code-editor {
+    font-family: 'Consolas', monospace;
+    font-size: 14px;
+    line-height: 1.5;
+}
