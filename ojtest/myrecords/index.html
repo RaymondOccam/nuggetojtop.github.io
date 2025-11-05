@@ -52,23 +52,43 @@
             text-shadow: 0 0 10px rgba(255,255,255,0.3);
             font-size: 2rem;
         }
-        .logout-btn {
+        /* 新版按钮样式 */
+        .btn {
             padding: 0.8rem 1.5rem;
             font-size: 1rem;
             font-weight: 600;
-            color: #1a2a6c;
-            background: #fff;
+            color: #fff;
+            background: linear-gradient(135deg, #ff6b6b, #4ecdc4);
             border: none;
             border-radius: 50px;
             cursor: pointer;
             box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             text-decoration: none;
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
         }
-        .logout-btn:hover {
+        .btn:hover {
             transform: translateY(-3px);
             box-shadow: 0 10px 25px rgba(0,0,0,0.4);
-            color: #b21f1f;
+            background: linear-gradient(135deg, #ff5252, #45b7aa);
+        }
+        .btn::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: rgba(255,255,255,0.3);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: width 0.6s ease, height 0.6s ease;
+        }
+        .btn:active::after {
+            width: 200px;
+            height: 200px;
         }
         .filter-bar {
             display: flex;
@@ -130,21 +150,6 @@
             background: rgba(255, 193, 7, 0.2);
             color: #ffc107;
         }
-        .view-btn {
-            padding: 0.5rem 1rem;
-            font-size: 0.9rem;
-            border-radius: 5px;
-            border: none;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            background: #2196F3;
-            color: white;
-            text-decoration: none;
-        }
-        .view-btn:hover {
-            background: #0b7dda;
-            transform: translateY(-2px);
-        }
         .empty-state {
             text-align: center;
             padding: 4rem 2rem;
@@ -174,7 +179,7 @@
     <div class="container">
         <div class="header">
             <h1>我的提交记录</h1>
-            <a href="../login.html" class="logout-btn">退出登录</a>
+            <a href="../login.html" class="btn">退出登录</a>
         </div>
         <div class="filter-bar">
             <select class="filter-select" id="statusFilter">
@@ -185,8 +190,6 @@
             </select>
             <select class="filter-select" id="problemFilter">
                 <option value="all">所有题目</option>
-                <option value="1001">两数之和 (1001)</option>
-                <option value="1002">有效的括号 (1002)</option>
             </select>
             <select class="filter-select" id="languageFilter">
                 <option value="all">所有语言</option>
@@ -211,28 +214,12 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td>10001</td>
-                        <td>两数之和 (1001)</td>
-                        <td>Python</td>
-                        <td><span class="status ac">通过 (AC)</span></td>
-                        <td>42ms</td>
-                        <td>12.5MB</td>
-                        <td>2025-11-05 14:30:22</td>
-                        <td><a href="#" class="view-btn">查看详情</a></td>
-                    </tr>
-                    <tr>
-                        <td>10002</td>
-                        <td>有效的括号 (1002)</td>
-                        <td>C++</td>
-                        <td><span class="status wa">答案错误 (WA)</span></td>
-                        <td>18ms</td>
-                        <td>4.2MB</td>
-                        <td>2025-11-05 15:12:08</td>
-                        <td><a href="#" class="view-btn">查看详情</a></td>
-                    </tr>
+                    <!-- 移除所有虚构提交记录，显示空状态 -->
                 </tbody>
             </table>
+            <div class="empty-state">
+                暂无提交记录，<a href="../problem/index.html" class="btn">去做题</a>
+            </div>
         </div>
     </div>
     <script src="../js/myrecords.js"></script>
