@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>题目详情 - Nugget OJ</title>
+    <link rel="stylesheet" href="/ojtest/css/common.css">
+    <link rel="stylesheet" href="/ojtest/css/problem.css">
+</head>
+<body>
+    <header>
+        <div class="container header-content">
+            <a href="/ojtest/index.html" class="logo">Nugget OJ</a>
+            <div class="nav">
+                <!-- 由 common.js 动态渲染 -->
+            </div>
+            <div class="admin-nav">
+                <!-- 管理员入口，由 common.js 动态渲染 -->
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <div id="problem-not-found" class="alert alert-danger" style="display: none;">
+            题目不存在或已被删除！
+        </div>
+
+        <div id="problem-detail" style="display: none;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h1 id="problem-title"></h1>
+                <span id="problem-difficulty" class="difficulty-tag"></span>
+            </div>
+
+            <div class="card">
+                <h3>题目描述</h3>
+                <div id="problem-description" class="problem-content"></div>
+
+                <h3 style="margin-top: 20px;">输入格式</h3>
+                <div id="problem-input" class="problem-content"></div>
+
+                <h3 style="margin-top: 20px;">输出格式</h3>
+                <div id="problem-output" class="problem-content"></div>
+
+                <h3 style="margin-top: 20px;">样例输入</h3>
+                <pre id="problem-sample-input" class="sample-code"></pre>
+
+                <h3 style="margin-top: 20px;">样例输出</h3>
+                <pre id="problem-sample-output" class="sample-code"></pre>
+            </div>
+
+            <!-- 代码提交区域 -->
+            <div class="card" style="margin-top: 20px;">
+                <h3>提交代码</h3>
+                <div id="submit-alert-area"></div>
+                <div class="form-group">
+                    <label for="language-select">选择语言</label>
+                    <select id="language-select" class="form-control">
+                        <option value="cpp">C++</option>
+                        <option value="c">C</option>
+                        <option value="java">Java</option>
+                        <option value="python3">Python3</option>
+                        <option value="javascript">JavaScript</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="code-editor">代码编辑区</label>
+                    <textarea id="code-editor" class="form-control" rows="15" placeholder="请输入代码..."></textarea>
+                </div>
+                <button id="submit-btn" class="btn btn-success">提交代码</button>
+            </div>
+
+            <!-- 提交状态区域 -->
+            <div class="card" style="margin-top: 20px; display: none;" id="submission-status">
+                <h3>提交状态</h3>
+                <div style="font-size: 16px; line-height: 2;">
+                    <p>提交ID：<span id="submission-id"></span></p>
+                    <p>提交时间：<span id="submission-time"></span></p>
+                    <p>状态：<span id="submission-status-text" class="status-tag"></span></p>
+                    <p>得分：<span id="submission-score"></span></p>
+                    <p>运行时间：<span id="submission-time-used"></span> ms</p>
+                    <p>内存使用：<span id="submission-memory-used"></span> KB</p>
+                    <p id="error-info-container" style="display: none;">错误信息：<pre id="submission-error-info"></pre></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/ojtest/js/common.js"></script>
+    <script src="/ojtest/js/api.js"></script>
+    <script src="/ojtest/js/problem-detail.js"></script>
+</body>
+</html>
