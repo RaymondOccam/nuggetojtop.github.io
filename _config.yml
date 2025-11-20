@@ -1,5 +1,2 @@
-permalink: /:title/
-redirects:
-  - from: /ojtest/*
-    to: /404.html
-    status: 404
+redirect_from:
+  - /ojtest: /404.html
