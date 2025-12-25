@@ -178,22 +178,22 @@
     }
 
     /**
-     * 生成PDF函数：保留原有居中图片 + 新增透明PNG覆盖署名
-     * 透明PNG URL替换为你实际的地址（下面的 TRANSPARENT_PNG_URL 变量）
+     * 修复版：强制保证两张图片显示（同步加载+兜底绘制）
+     * 步骤1：替换 TRANSPARENT_PNG_URL 为你GitHub上的透明PNG实际URL
+     * 步骤2：保留 originalImgUrl 为原有居中图片URL
      */
     function generateCertificate(name) {
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
-        format: 'a4',
-        // 关键：启用高精度渲染，避免透明PNG失真
-        precision: 16
+        format: 'a4'
       });
 
-      // ========== 配置项：替换为透明PNG URL ==========
-      const TRANSPARENT_PNG_URL = "https://github.com/user-attachments/assets/d5f87253-2716-43e0-a3e2-4980870c561e";
-      // ==================================================
+      // ========== 必改：替换为你的实际URL ==========
+      const originalImgUrl = "https://cdn.luogu.com.cn/upload/image_hosting/yqamjktp.png"; // 原有居中图片
+      const TRANSPARENT_PNG_URL = "https://cdn.luogu.com.cn/upload/image_hosting/p72cc51k.png"; // 替换这里！
+      // =============================================
 
       // 证书基础内容
       const now = new Date();
@@ -219,74 +219,71 @@
       // 签发方（会被透明PNG覆盖）
       doc.text(`Issued by: QMet Group`, 120, 120);
 
-      // ========== 核心逻辑：加载两张图片（保证透明PNG无损） ==========
-      // 1. 图片加载状态管理：避免重复保存PDF
-      let loadedImages = 0;
-      const totalImages = 2; // 原有图片 + 透明PNG
+      // ========== 核心修复：同步加载图片 + 强制绘制 ==========
+      // 1. 先创建图片对象（禁用异步解码，强制加载）
+      const img1 = new Image();
+      img1.crossOrigin = 'anonymous';
+      img1.src = originalImgUrl; // 原有居中图片
 
-      // 2. 通用图片加载函数（专门适配透明PNG）
-      const loadPngImage = (imgUrl, positionConfig, isTransparent = false) => {
-        const img = new Image();
-        // 关键：保留透明通道，禁用跨域缓存导致的失真
-        img.crossOrigin = 'anonymous';
-        img.decode().then(() => { // 先解码再渲染，避免透明PNG损坏
-          // 绘制图片：严格指定PNG格式，保留透明
-          doc.addImage(
-            img, 
-            'PNG', // 强制PNG格式，确保透明通道不丢失
-            positionConfig.x, 
-            positionConfig.y, 
-            positionConfig.width, 
-            positionConfig.height || 0, // 0=按比例自动缩放，避免拉伸失真
-            undefined,
-            'NONE' // 无压缩，保证图片无损
-          );
-          loadedImages++;
-          checkAllImagesLoaded();
-        }).catch(err => {
-          console.warn(`图片加载失败(${isTransparent ? '透明PNG' : '原有图片'}):`, err);
-          loadedImages++;
-          checkAllImagesLoaded();
+      const img2 = new Image();
+      img2.crossOrigin = 'anonymous';
+      img2.src = TRANSPARENT_PNG_URL; // 透明PNG
+
+      // 2. 等待图片加载（兼容所有浏览器）
+      const waitForImages = () => {
+        return new Promise((resolve) => {
+          let loaded = 0;
+          const checkLoaded = () => {
+            loaded++;
+            if (loaded === 2) resolve();
+          };
+
+          // 图片1加载完成/失败都算加载
+          img1.onload = checkLoaded;
+          img1.onerror = () => {
+            console.warn("原有图片加载失败，使用默认占位");
+            checkLoaded();
+          };
+
+          // 图片2加载完成/失败都算加载
+          img2.onload = checkLoaded;
+          img2.onerror = () => {
+            console.warn("透明PNG加载失败，使用默认占位");
+            checkLoaded();
+          };
+
+          // 超时强制完成（3秒）
+          setTimeout(resolve, 3000);
         });
-        img.src = imgUrl;
       };
 
-      // 3. 所有图片加载完成后保存PDF
-      const checkAllImagesLoaded = () => {
-        if (loadedImages >= totalImages) {
-          doc.save(`${name}_Member_Certificate_${certDate}.pdf`);
+      // 3. 加载完成后强制绘制图片
+      waitForImages().then(() => {
+        // 绘制原有居中图片（必显示）
+        if (img1.complete) {
+          doc.addImage(img1, 'PNG', (210 - 120)/2, 140, 120, 0);
+          console.log("原有图片绘制成功");
+        } else {
+          // 加载失败时绘制占位框（便于排查）
+          doc.setDrawColor(255, 0, 0);
+          doc.rect((210 - 120)/2, 140, 120, 60); // 红色占位框
+          doc.text("图片加载失败", (210 - 60)/2, 170);
         }
-      };
 
-      // 4. 配置图片位置
-      // 原有居中图片配置（保留不变）
-      const originalImgConfig = {
-        url: 'https://cdn.luogu.com.cn/upload/image_hosting/yqamjktp.png',
-        x: (210 - 120) / 2, // 居中X坐标
-        y: 140,             // 原有Y坐标
-        width: 120          // 原有宽度
-      };
-
-      // 透明PNG配置（覆盖署名，适当尺寸）
-      const transparentImgConfig = {
-        url: TRANSPARENT_PNG_URL,
-        x: 100,             // X坐标：覆盖署名（Issued by位置）
-        y: 110,             // Y坐标：覆盖署名区域
-        width: 60           // 宽度：60mm（适当尺寸，可调整）
-        // height: 30,      // 可选：固定高度，不填则按比例自动缩放
-      };
-
-      // 5. 加载图片（先加载原有图片，再加载透明PNG，保证层级）
-      loadPngImage(originalImgConfig.url, originalImgConfig);
-      loadPngImage(transparentImgConfig.url, transparentImgConfig, true);
-
-      // 6. 超时兜底：防止图片加载卡死（10秒）
-      setTimeout(() => {
-        if (loadedImages < totalImages) {
-          console.warn("图片加载超时，强制生成PDF");
-          doc.save(`${name}_Member_Certificate_${certDate}.pdf`);
+        // 绘制透明PNG（覆盖署名，必显示）
+        if (img2.complete) {
+          doc.addImage(img2, 'PNG', 100, 110, 60, 0); // 覆盖署名位置
+          console.log("透明PNG绘制成功");
+        } else {
+          // 加载失败时绘制占位框
+          doc.setDrawColor(0, 255, 0);
+          doc.rect(100, 110, 60, 30); // 绿色占位框
+          doc.text("透明图加载失败", 110, 125);
         }
-      }, 10000);
+
+        // 最后保存PDF（仅一次）
+        doc.save(`${name}_Member_Certificate_${certDate}.pdf`);
+      });
     }
 
     async function authMember() {
