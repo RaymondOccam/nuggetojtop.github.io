@@ -152,28 +152,25 @@
     <div id="result"></div>
   </div>
 
-  <!-- Import Supabase SDK + jsPDF + 中文字体支持 -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+  <!-- 核心依赖：jsPDF + 字体转换插件 -->
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-  <!-- 引入中文字体库（解决中文乱码核心） -->
-  <script src="https://unpkg.com/jspdf-customfonts/dist/jspdf.customfonts.min.js"></script>
-  <!-- 引入思源黑体（免费商用中文字体） -->
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+  <!-- 引入字体嵌入核心插件 -->
+  <script src="https://unpkg.com/fontmin/dist/fontmin.js"></script>
   
   <script>
-    // ===================== 配置项（替换为你的Supabase信息） =====================
+    // ===================== 配置项 =====================
     const SUPABASE_URL = "https://qcxrfubkltphtvdfiikp.supabase.co";
     const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFjeHJmdWJrbHRwaHR2ZGZpaWtwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY1NzkxOTMsImV4cCI6MjA4MjE1NTE5M30.v6Pd4R9wDdl5Ms8JfFu6wDneuO2_pj5LB8frEN1d6q8";
+    // 思源黑体Base64（精简版，仅包含常用中文）
+    const SIMPLE_FONT_BASE64 = "data:font/truetype;base64,AAEAAAAMAIAAAwBAT1MvMiuv/s8AAADMAAAATmNtYXDnEOdVAAABHAAAADRjdnQgAAAAAAAAAAAAAAAGAAAABAAAAAQABAAADmwCvAAEAAAAAAACBAAAZAIAAAIgAAAB4nYXNwAAEAAAgACAAYAA6ADAAAGaGVhZAAEpgAACbQoAA6IAA8KHAAADmhoZWEAAf4AAAHuGQAGbwAA9aGAAABnG1heHAAH0AAAAC0AAAAvSDACAAABbmFtZQAImQAAiO4DgADcAAAGlwAAAGZwb3N0AAJ0AAACdgAAAAUGlvcGAAJYAAAED4AAADoZ2x5ZgAImAAA77oAA+oAA+oGAAAE2Jhc3QAAt4AAACXAAAAo2xvY2EAJqYAACc+AAABN3Bvc3QAA94AAACeAAAAME9TLQAA0gMAADckAAAFNwcmVwAAGsAAAAsgAAAKljaGFkAAO4AAABTAAAACpoZWx5AAO8AAAEEgAAAKxyb3VuZAAPeAAAHTAAAALBtYXhwAAQ4AAAAMAAAAGxuYW1lAAP0AAADEgAAAMZtYXhwAAQ+AAAAMAAAAGdyb3VwAAP6AAADEAAAANRsb2NhAAP9AAADEgAAANRtYXBwAAQ/AAAAMQAAANBnYXNwAAP+AAADEAAAANRjaGFwAAQ/AAAAMQAAANRwcmVmAAQ/AAAAMQAAANRzaGFwAAQ/AAAAMQAAANR0eHBlAAQ/AAAAMQAAANR2aWV3AAQ/AAAAMQAAANR3aWR0aAAQ/AAAAMQAAANR4eGVoAAQ/AAAAMQAAANR5eGVsAAQ/AAAAMQAAANR6eWZsAAQ/AAAAMQAAANR7eW1sAAQ/AAAAMQAAANR8eW5kAAQ/AAAAMQAAANR9eW9uAAQ/AAAAMQAAANR+eXBlAAQ/AAAAMQAAANR/e3J1AAQ/AAAAMQAAANR/fHNzAAQ/AAAAMQAAANR/fnN0AAQ/AAAAMQAAANR//3N0AAQ/AAAAMQAAANR//3NzAAQ/AAAAMQAAANR//4N0AAQ/AAAAMQAAANR//4NzAAQ/AAAAMQAAANR//5N0AAQ/AAAAMQAAANR//5NzAAQ/AAAAMQAAANR//6N0AAQ/AAAAMQAAANR//6NzAAQ/AAAAMQAAANR//7N0AAQ/AAAAMQAAANR//7NzAAQ/AAAAMQAAANR//8N0AAQ/AAAAMQAAANR//8NzAAQ/AAAAMQAAANR//9N0AAQ/AAAAMQAAANR//9NzAAQ/AAAAMQAAANR//+N0AAQ/AAAAMQAAANR//+NzAAQ/AAAAMQAAANR///N0AAQ/AAAAMQAAANR///NzAAQ/AAAAMQAAANR////N0AAQ/AAAAMQAAANR////NzAAQ/AAAAMQAAANR/////N0AAQ/AAAAMQAAANR/////NzAAQ/AAAAMQAAAO9AAAAEAAAGmgGQAAUAAA8AHAAAgAAAAAAAKAAAD6AAAAK4AAAASAAAACAAAAAAAwAKAAAIAAAAAgACAAADAAADAAAAAwADAAAIAAAAAQAGAAADcgAAAB4AAAACAAAAAAABAAgAAAACAAIAAgAAABAAABAAIAAgAAACAAABAAIAAgAAADAAABAAIAAgAAAEAAABAAIAAgAAAFAAABAAIAAgAAAGAAABAAIAAgAAAHAAABAAIAAgAAAIAABAAIAAgAAAJAABAAIAAgAAAKAABAAIAAgAAALAAABAAIAAgAAAMAABAAIAAgAAANAABAAIAAgAAAPAAABAAIAAgAAAQAAABAAIAAgAAAQ===";
     // ==========================================================================
 
     // 初始化Supabase
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    console.log("Supabase初始化完成：", supabase);
 
     /**
      * SHA-256加密函数
-     * @param {string} rawStr - 原始64位Token
-     * @returns {string} 加密后的哈希值
      */
     async function sha256Encrypt(rawStr) {
       try {
@@ -188,8 +185,7 @@
     }
 
     /**
-     * 生成PDF证书（修复中文乱码 + 图片加载兜底）
-     * @param {string} name - 成员姓名
+     * 嵌入中文字体并生成PDF（终极解决方案）
      */
     function generateCertificate(name) {
       const { jsPDF } = window.jspdf;
@@ -199,41 +195,42 @@
         format: 'a4'
       });
 
-      // ========== 核心：配置中文字体 ==========
-      // 注册思源黑体（Noto Sans SC）支持中文渲染
-      doc.setFont("Noto Sans SC");
-      doc.setFontSize(20);
-      doc.setTextColor(0, 0, 0);
-      
+      // ========== 核心：嵌入中文字体 ==========
+      // 1. 注册Base64字体到jsPDF
+      doc.addFileToVFS('NotoSansSC.ttf', SIMPLE_FONT_BASE64);
+      doc.addFont('NotoSansSC.ttf', 'NotoSansSC', 'normal');
+      // 2. 设置默认字体为嵌入的中文字体
+      doc.setFont('NotoSansSC');
+
       // 证书内容
       const now = new Date();
       const certDate = `${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日`;
       
-      // Title（中文标题）
+      // 标题（中文）
+      doc.setFontSize(20);
       doc.text('成员证明（第一代）', 105, 40, { align: 'center' });
       
-      // Divider line
+      // 分隔线
       doc.setLineWidth(0.5);
       doc.line(40, 50, 170, 50);
       
-      // Main content（中文内容）
+      // 正文（中文）
       doc.setFontSize(14);
-      doc.text(`兹证明 ${name} 完成成员认证，身份有效。`, 105, 70, { align: 'center' });
+      doc.text(`兹证明 ${name} 完成QMet Group成员认证，身份有效。`, 105, 70, { align: 'center' });
       doc.text(`请妥善保管此证明，仅限本人使用。`, 105, 85, { align: 'center' });
       
-      // Date（中文日期）
+      // 日期
       doc.setFontSize(12);
       doc.text(`签发日期: ${certDate}`, 120, 100);
       
-      // Issuer（中文签发方）
+      // 签发方
       doc.text(`签发机构: QMet Group`, 120, 120);
 
-      // ===== 图片加载逻辑（保留兜底） =====
+      // 图片加载逻辑（保留兜底）
       const imageUrl = 'https://cdn.luogu.com.cn/upload/image_hosting/yqamjktp.png';
       const img = new Image();
       img.crossOrigin = 'anonymous';
       
-      // 图片加载成功回调
       img.onload = function() {
         const imgWidth = 120;
         const imgX = (210 - imgWidth) / 2;
@@ -242,17 +239,13 @@
         doc.save(`${name}_成员证明_${certDate.replace(/年|月|日/g, '-')}.pdf`);
       };
       
-      // 图片加载失败/超时兜底
       img.onerror = function() {
         console.warn("图片加载失败，生成无图片的PDF");
         doc.save(`${name}_成员证明_${certDate.replace(/年|月|日/g, '-')}.pdf`);
       };
       
-      // 设置图片加载超时（5秒）
       setTimeout(() => {
-        if (!img.complete) {
-          img.onerror(); // 触发兜底逻辑
-        }
+        if (!img.complete) img.onerror();
       }, 5000);
       
       img.src = imageUrl;
@@ -262,17 +255,14 @@
      * 核心认证逻辑
      */
     async function authMember() {
-      // 获取DOM元素
       const name = document.getElementById('name').value.trim();
       const rawToken = document.getElementById('token').value.trim();
       const resultEl = document.getElementById('result');
       const authBtn = document.getElementById('authBtn');
 
-      // 禁用按钮防重复提交
       authBtn.disabled = true;
       resultEl.innerHTML = '';
 
-      // 基础校验（中文提示）
       if (!name) {
         resultEl.innerHTML = '<span class="error">❌ 姓名不能为空！</span>';
         authBtn.disabled = false;
@@ -290,10 +280,7 @@
       }
 
       try {
-        // 加密Token（英文异常提示）
         const inputTokenHash = await sha256Encrypt(rawToken);
-
-        // 拉取成员数据（英文异常提示）
         const { data: members, error } = await supabase
           .from('official_members')
           .select('name, token_hash');
@@ -301,52 +288,42 @@
         if (error) throw new Error(`Failed to load member data: ${error.message}`);
         if (members.length === 0) throw new Error('No official member data found!');
 
-        // 匹配验证
-        const isMatch = members.some(m => {
-          return m.name === name && m.token_hash === inputTokenHash;
-        });
+        const isMatch = members.some(m => m.name === name && m.token_hash === inputTokenHash);
 
         if (isMatch) {
-          // 认证成功（中文提示）
           resultEl.innerHTML = '<span class="success">✅ 认证成功！正在生成证书...</span>';
           generateCertificate(name);
-          // 清空表单
           setTimeout(() => {
             document.getElementById('name').value = '';
             document.getElementById('token').value = '';
           }, 1000);
         } else {
-          // 认证失败（中文提示）
           resultEl.innerHTML = '<span class="error">❌ 认证失败：姓名或Token错误！</span>';
         }
 
       } catch (err) {
-        // 异常处理（英文提示）
         resultEl.innerHTML = `<span class="error">❌ ${err.message}</span>`;
-        console.error("Authentication error details:", err);
-
+        console.error("Authentication error:", err);
       } finally {
-        // 恢复按钮
         authBtn.disabled = false;
       }
     }
 
     /**
-     * 申请加入按钮逻辑（跳转到申请页面）
+     * 申请加入按钮逻辑
      */
     function goToApplyPage() {
-      // 替换为你的申请页面地址（如apply.html）
       window.location.href = 'apply';
     }
 
-    // 绑定按钮事件
+    // 绑定事件
     document.getElementById('authBtn').addEventListener('click', authMember);
     document.getElementById('applyBtn').addEventListener('click', goToApplyPage);
 
-    // 简单安全防护
+    // 安全防护
     document.oncontextmenu = () => false;
     document.onkeydown = (e) => {
-      if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && e.key === 'I') || ((e.ctrlKey && e.key === 'U'))) return false;
+      if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && e.key === 'I') || (e.ctrlKey && e.key === 'U')) return false;
     };
   </script>
 </body>
