@@ -4,107 +4,146 @@
   <meta charset="UTF-8">
   <title>管理员审核</title>
   <style>
-    body { max-width: 800px; margin: 2rem auto; padding: 0 1rem; }
-    .auth { margin-bottom: 2rem; padding: 1rem; border: 1px solid #eee; }
+    body { max-width: 800px; margin: 2rem auto; padding: 0 1rem; font-family: Arial, sans-serif; }
+    .auth { margin-bottom: 2rem; padding: 1.5rem; border: 1px solid #eee; border-radius: 6px; }
     .apply-list { margin-top: 2rem; }
-    .apply-item { padding: 1rem; border: 1px solid #eee; margin: 1rem 0; }
-    button { padding: 0.5rem 1rem; margin-right: 0.5rem; cursor: pointer; }
-    .approve { background: green; color: white; border: none; }
-    .reject { background: red; color: white; border: none; }
+    .apply-item { padding: 1.2rem; border: 1px solid #eee; border-radius: 6px; margin: 1rem 0; }
+    button { padding: 0.6rem 1.2rem; margin-right: 0.8rem; cursor: pointer; border: none; border-radius: 4px; font-size: 14px; }
+    .approve { background: #28a745; color: white; }
+    .reject { background: #dc3545; color: white; }
+    .approve:hover { background: #218838; }
+    .reject:hover { background: #c82333; }
+    button:disabled { background: #ccc; cursor: not-allowed; }
     #applyContainer { display: none; }
+    .form-group { margin: 0.8rem 0; }
+    label { display: block; margin-bottom: 0.4rem; font-weight: 500; }
+    input { padding: 0.6rem; border: 1px solid #ddd; border-radius: 4px; width: 300px; }
+    #authResult { margin-top: 1rem; font-weight: 500; }
+    .success-text { color: #28a745; }
+    .error-text { color: #dc3545; }
   </style>
 </head>
 <body>
   <h1>成员申请审核</h1>
+
   <!-- 管理员鉴权 -->
   <div class="auth">
-    <label>管理员密码</label>
-    <input type="password" id="adminPwd" placeholder="请输入管理员密码">
-    <button onclick="checkAdmin()">登录</button>
+    <div class="form-group">
+      <label>管理员密码</label>
+      <input type="password" id="adminPwd" placeholder="请输入管理员密码">
+    </div>
+    <button id="loginBtn">登录</button>
     <div id="authResult"></div>
   </div>
 
   <!-- 申请列表（登录后显示） -->
   <div id="applyContainer" class="apply-list">
     <h2>待审核申请</h2>
-    <div id="applyList"></div>
+    <button onclick="loadApplyList()" style="background: #007bff; color: white;">刷新申请列表</button>
+    <div id="applyList" style="margin-top: 1rem;"></div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.38.4/dist/umd/supabase.min.js"></script>
+  <!-- 引入Supabase SDK（最新稳定版） -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+  
   <script>
-    // 配置
-    const supabaseUrl = "https://qcxrfubkltphtvdfiikp.supabase.co";
-    const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFjeHJmdWJrbHRwaHR2ZGZpaWtwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY1NzkxOTMsImV4cCI6MjA4MjE1NTE5M30.v6Pd4R9wDdl5Ms8JfFu6wDneuO2_pj5LB8frEN1d6q8";
-    const supabase = supabase.createClient(supabaseUrl, supabaseKey);
-    const ADMIN_PWD = "你的管理员密码";
+    const SUPABASE_URL = "https://qcxrfubkltphtvdfiikp.supabase.co";
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFjeHJmdWJrbHRwaHR2ZGZpaWtwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY1NzkxOTMsImV4cCI6MjA4MjE1NTE5M30.v6Pd4R9wDdl5Ms8JfFu6wDneuO2_pj5LB8frEN1d6q8";
+    const ADMIN_PWD = "5ifsEZKn";
+    // ==================================================================
+
+    // 优先初始化Supabase实例
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    console.log("Supabase初始化完成：", supabase);
+
+    // 1. 管理员登录逻辑（绑定按钮点击事件，避免onclick失效）
+    document.getElementById('loginBtn').addEventListener('click', checkAdmin);
     function checkAdmin() {
-      const pwd = document.getElementById('adminPwd').value;
+      const pwd = document.getElementById('adminPwd').value.trim();
       const authResult = document.getElementById('authResult');
+      
+      if (!pwd) {
+        authResult.innerHTML = '<span class="error-text">❌ 密码不能为空！</span>';
+        return;
+      }
       if (pwd === ADMIN_PWD) {
-        authResult.innerHTML = '<span style="color:green">登录成功！</span>';
+        authResult.innerHTML = '<span class="success-text">✅ 登录成功！</span>';
         document.getElementById('applyContainer').style.display = 'block';
         loadApplyList(); // 加载待审核申请
       } else {
-        authResult.innerHTML = '<span style="color:red">密码错误！</span>';
+        authResult.innerHTML = '<span class="error-text">❌ 密码错误！</span>';
       }
     }
 
-    // 加载待审核申请
+    // 2. 加载待审核申请列表
     async function loadApplyList() {
       const applyListEl = document.getElementById('applyList');
-      // 查询待审核（status=pending）的申请
-      const { data, error } = await supabase
-        .from('apply_requests')
-        .select('*')
-        .eq('status', 'pending')
-        .order('create_time', { ascending: false });
+      applyListEl.innerHTML = '<div>加载中...</div>';
 
-      if (error) {
-        applyListEl.innerHTML = `<span style="color:red">加载失败：${error.message}</span>`;
-        return;
-      }
+      try {
+        // 查询status为pending的待审核申请
+        const { data, error } = await supabase
+          .from('apply_requests') // 确保表名与Supabase一致（小写）
+          .select('*')
+          .eq('status', 'pending')
+          .order('create_time', { ascending: false });
 
-      if (data.length === 0) {
-        applyListEl.innerHTML = '暂无待审核申请';
-        return;
-      }
+        if (error) throw new Error(`加载失败：${error.message}`);
 
-      // 渲染申请列表
-      applyListEl.innerHTML = data.map(item => `
-        <div class="apply-item">
-          <div>申请ID：${item.id}</div>
-          <div>姓名：${item.name}</div>
-          <div>Token哈希：${item.token_hash}</div>
-          <div>申请理由：${item.reason || '无'}</div>
-          <div>提交时间：${new Date(item.create_time).toLocaleString()}</div>
-          <div style="margin-top: 1rem;">
-            <input type="text" id="note-${item.id}" placeholder="审核备注（选填）">
-            <button class="approve" onclick="approveApply(${item.id})">批准</button>
-            <button class="reject" onclick="rejectApply(${item.id})">驳回</button>
+        if (data.length === 0) {
+          applyListEl.innerHTML = '<div>暂无待审核申请</div>';
+          return;
+        }
+
+        // 渲染申请列表（绑定批准/驳回按钮事件）
+        applyListEl.innerHTML = data.map(item => `
+          <div class="apply-item">
+            <div><strong>申请ID：</strong>${item.id}</div>
+            <div><strong>姓名：</strong>${item.name}</div>
+            <div><strong>Token哈希：</strong>${item.token_hash}</div>
+            <div><strong>申请理由：</strong>${item.reason || '无'}</div>
+            <div><strong>提交时间：</strong>${new Date(item.create_time).toLocaleString()}</div>
+            <div style="margin-top: 1rem;">
+              <div class="form-group">
+                <label>审核备注</label>
+                <input type="text" id="note-${item.id}" placeholder="输入审核备注（选填）" style="width: 250px;">
+              </div>
+              <button class="approve" onclick="approveApply(${item.id})">批准</button>
+              <button class="reject" onclick="rejectApply(${item.id})">驳回</button>
+            </div>
           </div>
-        </div>
-      `).join('');
+        `).join('');
+      } catch (err) {
+        applyListEl.innerHTML = `<span class="error-text">❌ ${err.message}</span>`;
+        console.error("加载申请列表异常：", err);
+      }
     }
 
-    // 批准申请（同步到正式表+更新状态）
+    // 3. 批准申请（同步到正式成员表+更新状态）
     async function approveApply(id) {
+      if (!confirm("确认批准该申请吗？")) return;
       const note = document.getElementById(`note-${id}`).value.trim() || '批准加入';
+
       try {
-        // 1. 获取申请详情
+        // 步骤1：获取申请详情
         const { data: applyData, error: getError } = await supabase
           .from('apply_requests')
           .select('name, token_hash')
           .eq('id', id)
           .single();
-        if (getError) throw getError;
+        if (getError) throw new Error(`获取申请信息失败：${getError.message}`);
 
-        // 2. 同步到正式成员表
+        // 步骤2：同步到正式成员表（official_members）
         const { error: insertError } = await supabase
-          .from('official_members')
-          .insert([{ name: applyData.name, token_hash: applyData.token_hash }]);
-        if (insertError) throw insertError;
+          .from('official_members') // 确保该表已创建
+          .insert([{ 
+            name: applyData.name, 
+            token_hash: applyData.token_hash,
+            join_time: new Date()
+          }]);
+        if (insertError) throw new Error(`同步到正式表失败：${insertError.message}`);
 
-        // 3. 更新审核状态
+        // 步骤3：更新申请审核状态
         const { error: updateError } = await supabase
           .from('apply_requests')
           .update({ 
@@ -113,18 +152,21 @@
             review_time: new Date() 
           })
           .eq('id', id);
-        if (updateError) throw updateError;
+        if (updateError) throw new Error(`更新审核状态失败：${updateError.message}`);
 
-        alert('批准成功！');
+        alert("✅ 批准成功！");
         loadApplyList(); // 刷新列表
       } catch (err) {
-        alert(`批准失败：${err.message}`);
+        alert(`❌ 批准失败：${err.message}`);
+        console.error("批准申请异常：", err);
       }
     }
 
-    // 驳回申请（仅更新状态）
+    // 4. 驳回申请（仅更新状态）
     async function rejectApply(id) {
+      if (!confirm("确认驳回该申请吗？")) return;
       const note = document.getElementById(`note-${id}`).value.trim() || '驳回申请';
+
       try {
         const { error } = await supabase
           .from('apply_requests')
@@ -134,12 +176,13 @@
             review_time: new Date() 
           })
           .eq('id', id);
-        if (error) throw error;
 
-        alert('驳回成功！');
+        if (error) throw new Error(`驳回失败：${error.message}`);
+        alert("✅ 驳回成功！");
         loadApplyList(); // 刷新列表
       } catch (err) {
-        alert(`驳回失败：${err.message}`);
+        alert(`❌ 驳回失败：${err.message}`);
+        console.error("驳回申请异常：", err);
       }
     }
   </script>
