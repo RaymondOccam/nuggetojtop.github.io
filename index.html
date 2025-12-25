@@ -183,7 +183,10 @@
       }
     }
 
-
+    /**
+     * 生成PDF证书（修复图片加载失败导致不下载的问题）
+     * @param {string} name - 成员姓名
+     */
     function generateCertificate(name) {
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF({
@@ -216,9 +219,13 @@
       
       // Issuer
       doc.text('Issued by: nuggetoj.top', 120, 120);
+
+      // ===== 核心修复：添加图片加载失败兜底 + 同步执行save =====
       const imageUrl = 'https://cdn.luogu.com.cn/upload/image_hosting/yqamjktp.png';
       const img = new Image();
       img.crossOrigin = 'anonymous';
+      
+      // 图片加载成功回调
       img.onload = function() {
         const imgWidth = 120;
         const imgX = (210 - imgWidth) / 2;
@@ -226,6 +233,20 @@
         doc.addImage(img, 'PNG', imgX, imgY, imgWidth, 0);
         doc.save(`${name}_Member_Certificate_${certDate.replace(/\//g, '-')}.pdf`);
       };
+      
+      // 关键：图片加载失败/超时兜底（确保PDF必下载）
+      img.onerror = function() {
+        console.warn("图片加载失败，生成无图片的PDF");
+        doc.save(`${name}_Member_Certificate_${certDate.replace(/\//g, '-')}.pdf`);
+      };
+      
+      // 设置图片加载超时（5秒）
+      setTimeout(() => {
+        if (!img.complete) {
+          img.onerror(); // 触发兜底逻辑
+        }
+      }, 5000);
+      
       img.src = imageUrl;
     }
 
@@ -280,12 +301,13 @@
         if (isMatch) {
           // 认证成功（中文提示）
           resultEl.innerHTML = '<span class="success">✅ 认证成功！正在生成证书...</span>';
+          // 移除setTimeout，直接执行（避免时序问题）
+          generateCertificate(name);
+          // 清空表单
           setTimeout(() => {
-            generateCertificate(name);
-            // 清空表单
             document.getElementById('name').value = '';
             document.getElementById('token').value = '';
-          }, 500);
+          }, 1000);
         } else {
           // 认证失败（中文提示）
           resultEl.innerHTML = '<span class="error">❌ 认证失败：姓名或Token错误！</span>';
