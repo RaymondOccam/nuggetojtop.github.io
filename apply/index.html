@@ -161,8 +161,8 @@
             name: name,
             token_hash: tokenHash,
             reason: reason,
-            status: 'pending', // 显式指定审核状态
-            create_time: new Date() // 提交时间
+            create_time: new Date(), // 提交时间
+            status: 'pending' // 显式指定审核状态
           }]);
 
         // 5. 处理Supabase错误
