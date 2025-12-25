@@ -152,9 +152,13 @@
     <div id="result"></div>
   </div>
 
-  <!-- Import Supabase SDK + jsPDF -->
+  <!-- Import Supabase SDK + jsPDF + 中文字体支持 -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <!-- 引入中文字体库（解决中文乱码核心） -->
+  <script src="https://unpkg.com/jspdf-customfonts/dist/jspdf.customfonts.min.js"></script>
+  <!-- 引入思源黑体（免费商用中文字体） -->
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
   
   <script>
     // ===================== 配置项（替换为你的Supabase信息） =====================
@@ -184,7 +188,7 @@
     }
 
     /**
-     * 生成PDF证书（修复图片加载失败导致不下载的问题）
+     * 生成PDF证书（修复中文乱码 + 图片加载兜底）
      * @param {string} name - 成员姓名
      */
     function generateCertificate(name) {
@@ -194,34 +198,37 @@
         unit: 'mm',
         format: 'a4'
       });
-    
-      // 证书内容
-      const now = new Date();
-      const certDate = `${now.getDate()}/${now.getMonth()+1}/${now.getFullYear()}`;
-      
-      // Title
+
+      // ========== 核心：配置中文字体 ==========
+      // 注册思源黑体（Noto Sans SC）支持中文渲染
+      doc.setFont("Noto Sans SC");
       doc.setFontSize(20);
       doc.setTextColor(0, 0, 0);
-      doc.text('成员证明（第一代）', 85, 40, { align: 'center' });
+      
+      // 证书内容
+      const now = new Date();
+      const certDate = `${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日`;
+      
+      // Title（中文标题）
+      doc.text('成员证明（第一代）', 105, 40, { align: 'center' });
       
       // Divider line
       doc.setLineWidth(0.5);
       doc.line(40, 50, 170, 50);
       
-      // Main content
+      // Main content（中文内容）
       doc.setFontSize(14);
-      doc.text(`对于 ${name} 的成员认证通过，此证明。`, 20, 70);
-      doc.text(``, 20, 70);
-      doc.text(`保护好此证件。`, 20, 85);
+      doc.text(`兹证明 ${name} 完成成员认证，身份有效。`, 105, 70, { align: 'center' });
+      doc.text(`请妥善保管此证明，仅限本人使用。`, 105, 85, { align: 'center' });
       
-      // Date
+      // Date（中文日期）
       doc.setFontSize(12);
       doc.text(`签发日期: ${certDate}`, 120, 100);
       
-      // Issuer
-      doc.text('来自: QMet Group', 120, 120);
+      // Issuer（中文签发方）
+      doc.text(`签发机构: QMet Group`, 120, 120);
 
-      // ===== 核心修复：添加图片加载失败兜底 + 同步执行save =====
+      // ===== 图片加载逻辑（保留兜底） =====
       const imageUrl = 'https://cdn.luogu.com.cn/upload/image_hosting/yqamjktp.png';
       const img = new Image();
       img.crossOrigin = 'anonymous';
@@ -232,13 +239,13 @@
         const imgX = (210 - imgWidth) / 2;
         const imgY = 140;
         doc.addImage(img, 'PNG', imgX, imgY, imgWidth, 0);
-        doc.save(`${name}_Member_Certificate_${certDate.replace(/\//g, '-')}.pdf`);
+        doc.save(`${name}_成员证明_${certDate.replace(/年|月|日/g, '-')}.pdf`);
       };
       
-      // 关键：图片加载失败/超时兜底（确保PDF必下载）
+      // 图片加载失败/超时兜底
       img.onerror = function() {
         console.warn("图片加载失败，生成无图片的PDF");
-        doc.save(`${name}_Member_Certificate_${certDate.replace(/\//g, '-')}.pdf`);
+        doc.save(`${name}_成员证明_${certDate.replace(/年|月|日/g, '-')}.pdf`);
       };
       
       // 设置图片加载超时（5秒）
@@ -302,7 +309,6 @@
         if (isMatch) {
           // 认证成功（中文提示）
           resultEl.innerHTML = '<span class="success">✅ 认证成功！正在生成证书...</span>';
-          // 移除setTimeout，直接执行（避免时序问题）
           generateCertificate(name);
           // 清空表单
           setTimeout(() => {
