@@ -29,7 +29,7 @@
       font-size: 20px;
     }
     .info-item {
-      margin: 1.2rem 0;
+      margin: 1.5rem 0;
       font-size: 16px;
       color: #495057;
     }
@@ -42,12 +42,13 @@
       margin-right: 0.5rem;
     }
     .status {
-      padding: 0.3rem 1rem;
-      border-radius: 4px;
+      padding: 0.4rem 1.2rem;
+      border-radius: 6px;
       color: white;
       font-weight: 500;
       display: inline-block;
       margin-left: 0.5rem;
+      font-size: 15px;
     }
     .status-wait { background-color: #ffc107; }
     .status-approve { background-color: #28a745; }
@@ -58,9 +59,22 @@
       font-weight: 500;
       margin-top: 2rem;
     }
+    .refresh-btn {
+      margin-top: 1.5rem;
+      padding: 0.7rem 1.5rem;
+      background-color: #e9ecef;
+      color: #495057;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .refresh-btn:hover {
+      background-color: #dee2e6;
+    }
     .back-link {
       display: inline-block;
-      margin-top: 2rem;
+      margin-top: 1.5rem;
       color: #0078d4;
       text-decoration: none;
       font-size: 14px;
@@ -72,13 +86,15 @@
 </head>
 <body>
   <div class="container">
-    <h1>QMet Group 审核状态查询</h1>
+    <h1>认证申请审核状态</h1>
     <div id="auditInfo"></div>
+    <button class="refresh-btn" id="refreshBtn">刷新审核状态</button>
     <a href="../index.html" class="back-link">← 返回认证页面</a>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
   <script>
+    // Supabase配置
     const SUPABASE_URL = "https://qcxrfubkltphtvdfiikp.supabase.co";
     const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFjeHJmdWJrbHRwaHR2ZGZpaWtwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY1NzkxOTMsImV4cCI6MjA4MjE1NTE5M30.v6Pd4R9wDdl5Ms8JfFu6wDneuO2_pj5LB8frEN1d6q8";
     let supabase;
@@ -91,35 +107,36 @@
       return;
     }
 
-    // 从URL参数提取审核编号
+    // 获取URL中的8位审核编号
     function getCheckId() {
       const urlParams = new URLSearchParams(window.location.search);
       return urlParams.get('checkId') || '';
     }
 
-    // 格式化时间为本地格式
+    // 格式化时间
     function formatTime(isoTime) {
       return new Date(isoTime).toLocaleString('zh-CN', {
         year: 'numeric', month: '2-digit', day: '2-digit',
-        hour: '2-digit', minute: '2-digit', second: '2-digit'
+        hour: '2-digit', minute: '2-digit'
       });
     }
 
-    // 查询并显示审核状态
-    async function queryStatus() {
+    // 查询并展示审核状态（核心函数）
+    async function queryAuditStatus() {
       const checkId = getCheckId();
       const el = document.getElementById('auditInfo');
 
-      // 验证审核编号格式
+      // 验证8位编号
       if (!checkId || checkId.length !== 8 || isNaN(checkId)) {
-        el.innerHTML = '<div class="error">❌ 无效的审核编号</div>';
+        el.innerHTML = '<div class="error">❌ 无效的8位审核编号</div>';
         return;
       }
 
       try {
+        // 查询审核记录
         const { data, error } = await supabase
           .from('audit_records')
-          .select('username, apply_time, status')
+          .select('*')
           .eq('check_id', checkId)
           .single();
 
@@ -128,36 +145,48 @@
           return;
         }
 
-        // 渲染状态样式
-        const statusClass = {
-          '等待': 'status-wait',
-          '批准': 'status-approve',
-          '驳回': 'status-reject'
-        }[data.status] || 'status-wait';
+        // 状态样式和文案映射
+        const statusConfig = {
+          '待审核': { class: 'status-wait', text: '待审核', tip: '管理员将尽快审核，请耐心等待' },
+          '通过': { class: 'status-approve', text: '审核通过', tip: '你可返回认证页面生成证书' },
+          '拒绝': { class: 'status-reject', text: '审核拒绝', tip: '请确认Token正确或联系管理员' }
+        };
+        const config = statusConfig[data.status] || statusConfig['待审核'];
 
-        // 仅显示要求的三个字段
+        // 展示核心信息
         el.innerHTML = `
           <div class="info-item">
             <span class="info-label">用户名：</span>
             <span>${data.username}</span>
           </div>
           <div class="info-item">
-            <span class="info-label">申请时间：</span>
+            <span class="info-label">提交时间：</span>
             <span>${formatTime(data.apply_time)}</span>
           </div>
           <div class="info-item">
-            <span class="info-label">批准状态：</span>
-            <span class="status ${statusClass}">${data.status}</span>
+            <span class="info-label">审核状态：</span>
+            <span class="status ${config.class}">${config.text}</span>
           </div>
+          <div style="color:#6c757d;font-size:14px;margin-top:1rem;">${config.tip}</div>
         `;
+
       } catch (err) {
-        el.innerHTML = '<div class="error">❌ 查询失败，请重试</div>';
+        el.innerHTML = '<div class="error">❌ 查询失败，请点击刷新重试</div>';
         console.error("查询审核状态错误:", err);
       }
     }
 
-    // 页面加载时执行查询
-    document.addEventListener('DOMContentLoaded', queryStatus);
+    // 页面加载时查询状态 + 绑定刷新按钮
+    document.addEventListener('DOMContentLoaded', function() {
+      // 初始查询
+      queryAuditStatus();
+
+      // 刷新按钮事件
+      const refreshBtn = document.getElementById('refreshBtn');
+      if (refreshBtn) {
+        refreshBtn.addEventListener('click', queryAuditStatus);
+      }
+    });
   </script>
 </body>
 </html>
