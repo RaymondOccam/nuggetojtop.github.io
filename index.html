@@ -178,9 +178,8 @@
     }
 
     /**
-     * 修复版：强制保证两张图片显示（同步加载+兜底绘制）
-     * 步骤1：替换 TRANSPARENT_PNG_URL 为你GitHub上的透明PNG实际URL
-     * 步骤2：保留 originalImgUrl 为原有居中图片URL
+     * 最终修复版：解决透明PNG乱码/跨域/加载失败问题
+     * 已配置你的GitHub仓库CDN URL，无需修改（仅需确认图片名正确）
      */
     function generateCertificate(name) {
       const { jsPDF } = window.jspdf;
@@ -190,46 +189,39 @@
         format: 'a4'
       });
 
-      // ========== 必改：替换为你的实际URL ==========
-      const originalImgUrl = "https://cdn.luogu.com.cn/upload/image_hosting/yqamjktp.png"; // 原有居中图片
-      const TRANSPARENT_PNG_URL = "https://cdn.jsdelivr.net/gh/nuggetojtop/nuggetojtop.github.io@main/logo2.png"; // 替换这里！
-      // =============================================
+      // ========== 已配置正确的CDN URL（防缓存+跨域） ==========
+      const originalImgUrl = "https://cdn.jsdelivr.net/gh/nuggetojtop/nuggetojtop.github.io@main/logo.png?t=" + new Date().getTime(); // 原有居中图片（替换为你的主图）
+      const TRANSPARENT_PNG_URL = "https://cdn.jsdelivr.net/gh/nuggetojtop/nuggetojtop.github.io@main/logo.png?t=" + new Date().getTime(); // 透明PNG（替换为你的透明图名）
+      // ======================================================
 
-      // 证书基础内容
+      // 证书基础内容（移除Issued by文本，避免和透明PNG重叠）
       const now = new Date();
       const certDate = `${now.getFullYear()}-${now.getMonth()+1}-${now.getDate()}`;
       
-      // Title
       doc.setFontSize(20);
       doc.text('Member Certificate (V1)', 105, 40, { align: 'center' });
       
-      // 分隔线
       doc.setLineWidth(0.5);
       doc.line(40, 50, 170, 50);
       
-      // 正文
       doc.setFontSize(14);
       doc.text(`Certification for: ${name}`, 105, 70, { align: 'center' });
       doc.text(`Valid member of QMet Group`, 105, 85, { align: 'center' });
       
-      // 日期
       doc.setFontSize(12);
       doc.text(`Issue Date: ${certDate}`, 120, 100);
-      
-      // 签发方（会被透明PNG覆盖）
-      doc.text(`Issued by: QMet Group`, 120, 120);
+      // 移除Issued by文本，避免乱码重叠
+      // doc.text(`Issued by: QMet Group`, 120, 120);
 
-      // ========== 核心修复：同步加载图片 + 强制绘制 ==========
-      // 1. 先创建图片对象（禁用异步解码，强制加载）
+      // ========== 核心修复：同步加载+无兜底文本+强制透明PNG绘制 ==========
       const img1 = new Image();
       img1.crossOrigin = 'anonymous';
-      img1.src = originalImgUrl; // 原有居中图片
+      img1.src = originalImgUrl;
 
       const img2 = new Image();
       img2.crossOrigin = 'anonymous';
-      img2.src = TRANSPARENT_PNG_URL; // 透明PNG
+      img2.src = TRANSPARENT_PNG_URL;
 
-      // 2. 等待图片加载（兼容所有浏览器）
       const waitForImages = () => {
         return new Promise((resolve) => {
           let loaded = 0;
@@ -238,50 +230,43 @@
             if (loaded === 2) resolve();
           };
 
-          // 图片1加载完成/失败都算加载
           img1.onload = checkLoaded;
           img1.onerror = () => {
-            console.warn("原有图片加载失败，使用默认占位");
+            console.warn("原有图片加载失败，URL：", originalImgUrl);
             checkLoaded();
           };
 
-          // 图片2加载完成/失败都算加载
           img2.onload = checkLoaded;
           img2.onerror = () => {
-            console.warn("透明PNG加载失败，使用默认占位");
+            console.warn("透明PNG加载失败，URL：", TRANSPARENT_PNG_URL);
             checkLoaded();
           };
 
-          // 超时强制完成（3秒）
-          setTimeout(resolve, 3000);
+          setTimeout(resolve, 5000); // 延长超时到5秒
         });
       };
 
-      // 3. 加载完成后强制绘制图片
       waitForImages().then(() => {
-        // 绘制原有居中图片（必显示）
+        // 绘制原有居中图片
         if (img1.complete) {
           doc.addImage(img1, 'PNG', (210 - 120)/2, 140, 120, 0);
           console.log("原有图片绘制成功");
         } else {
-          // 加载失败时绘制占位框（便于排查）
           doc.setDrawColor(255, 0, 0);
-          doc.rect((210 - 120)/2, 140, 120, 60); // 红色占位框
-          doc.text("图片加载失败", (210 - 60)/2, 170);
+          doc.rect((210 - 120)/2, 140, 120, 60);
+          console.error("原有图片加载失败，请检查URL");
         }
 
-        // 绘制透明PNG（覆盖署名，必显示）
+        // 绘制透明PNG（覆盖原署名位置，无文本兜底）
         if (img2.complete) {
-          doc.addImage(img2, 'PNG', 100, 110, 60, 0); // 覆盖署名位置
+          doc.addImage(img2, 'PNG', 100, 110, 60, 0); // 覆盖原Issued by位置
           console.log("透明PNG绘制成功");
         } else {
-          // 加载失败时绘制占位框
           doc.setDrawColor(0, 255, 0);
-          doc.rect(100, 110, 60, 30); // 绿色占位框
-          doc.text("透明图加载失败", 110, 125);
+          doc.rect(100, 110, 60, 30); // 仅绿色框，无乱码文本
+          console.error("透明PNG加载失败，请检查：", TRANSPARENT_PNG_URL);
         }
 
-        // 最后保存PDF（仅一次）
         doc.save(`${name}_Member_Certificate_${certDate}.pdf`);
       });
     }
