@@ -117,7 +117,6 @@
       color: #dc3545; 
       font-weight: 500;
     }
-    /* 淡色风格优化 */
     ::placeholder {
       color: #adb5bd;
       font-size: 13px;
@@ -129,7 +128,6 @@
 </head>
 <body>
   <div class="container">
-    <!-- 添加指定标题 -->
     <div class="group-title">Here is QMet Group!</div>
     <h1>成员Token认证</h1>
     
@@ -143,7 +141,6 @@
       <input type="password" id="token" placeholder="请输入64位Token字符串">
     </div>
     
-    <!-- 按钮组：申请加入 + 验证生成 -->
     <div class="btn-group">
       <button id="applyBtn">申请加入</button>
       <button id="authBtn">验证并生成证书</button>
@@ -152,22 +149,25 @@
     <div id="result"></div>
   </div>
 
-  <!-- 核心依赖：jsPDF + 字体转换插件 -->
+  <!-- 修正依赖顺序+移除冗余插件 -->
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-  <!-- 引入字体嵌入核心插件 -->
-  <script src="https://unpkg.com/fontmin/dist/fontmin.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
   
   <script>
     // ===================== 配置项 =====================
     const SUPABASE_URL = "https://qcxrfubkltphtvdfiikp.supabase.co";
     const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFjeHJmdWJrbHRwaHR2ZGZpaWtwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY1NzkxOTMsImV4cCI6MjA4MjE1NTE5M30.v6Pd4R9wDdl5Ms8JfFu6wDneuO2_pj5LB8frEN1d6q8";
-    // 思源黑体Base64（精简版，仅包含常用中文）
-    const SIMPLE_FONT_BASE64 = "data:font/truetype;base64,AAEAAAAMAIAAAwBAT1MvMiuv/s8AAADMAAAATmNtYXDnEOdVAAABHAAAADRjdnQgAAAAAAAAAAAAAAAGAAAABAAAAAQABAAADmwCvAAEAAAAAAACBAAAZAIAAAIgAAAB4nYXNwAAEAAAgACAAYAA6ADAAAGaGVhZAAEpgAACbQoAA6IAA8KHAAADmhoZWEAAf4AAAHuGQAGbwAA9aGAAABnG1heHAAH0AAAAC0AAAAvSDACAAABbmFtZQAImQAAiO4DgADcAAAGlwAAAGZwb3N0AAJ0AAACdgAAAAUGlvcGAAJYAAAED4AAADoZ2x5ZgAImAAA77oAA+oAA+oGAAAE2Jhc3QAAt4AAACXAAAAo2xvY2EAJqYAACc+AAABN3Bvc3QAA94AAACeAAAAME9TLQAA0gMAADckAAAFNwcmVwAAGsAAAAsgAAAKljaGFkAAO4AAABTAAAACpoZWx5AAO8AAAEEgAAAKxyb3VuZAAPeAAAHTAAAALBtYXhwAAQ4AAAAMAAAAGxuYW1lAAP0AAADEgAAAMZtYXhwAAQ+AAAAMAAAAGdyb3VwAAP6AAADEAAAANRsb2NhAAP9AAADEgAAANRtYXBwAAQ/AAAAMQAAANBnYXNwAAP+AAADEAAAANRjaGFwAAQ/AAAAMQAAANRwcmVmAAQ/AAAAMQAAANRzaGFwAAQ/AAAAMQAAANR0eHBlAAQ/AAAAMQAAANR2aWV3AAQ/AAAAMQAAANR3aWR0aAAQ/AAAAMQAAANR4eGVoAAQ/AAAAMQAAANR5eGVsAAQ/AAAAMQAAANR6eWZsAAQ/AAAAMQAAANR7eW1sAAQ/AAAAMQAAANR8eW5kAAQ/AAAAMQAAANR9eW9uAAQ/AAAAMQAAANR+eXBlAAQ/AAAAMQAAANR/e3J1AAQ/AAAAMQAAANR/fHNzAAQ/AAAAMQAAANR/fnN0AAQ/AAAAMQAAANR//3N0AAQ/AAAAMQAAANR//3NzAAQ/AAAAMQAAANR//4N0AAQ/AAAAMQAAANR//4NzAAQ/AAAAMQAAANR//5N0AAQ/AAAAMQAAANR//5NzAAQ/AAAAMQAAANR//6N0AAQ/AAAAMQAAANR//6NzAAQ/AAAAMQAAANR//7N0AAQ/AAAAMQAAANR//7NzAAQ/AAAAMQAAANR//8N0AAQ/AAAAMQAAANR//8NzAAQ/AAAAMQAAANR//9N0AAQ/AAAAMQAAANR//9NzAAQ/AAAAMQAAANR//+N0AAQ/AAAAMQAAANR//+NzAAQ/AAAAMQAAANR///N0AAQ/AAAAMQAAANR///NzAAQ/AAAAMQAAANR////N0AAQ/AAAAMQAAANR////NzAAQ/AAAAMQAAANR/////N0AAQ/AAAAMQAAANR/////NzAAQ/AAAAMQAAAO9AAAAEAAAGmgGQAAUAAA8AHAAAgAAAAAAAKAAAD6AAAAK4AAAASAAAACAAAAAAAwAKAAAIAAAAAgACAAADAAADAAAAAwADAAAIAAAAAQAGAAADcgAAAB4AAAACAAAAAAABAAgAAAACAAIAAgAAABAAABAAIAAgAAACAAABAAIAAgAAADAAABAAIAAgAAAEAAABAAIAAgAAAFAAABAAIAAgAAAGAAABAAIAAgAAAHAAABAAIAAgAAAIAABAAIAAgAAAJAABAAIAAgAAAKAABAAIAAgAAALAAABAAIAAgAAAMAABAAIAAgAAANAABAAIAAgAAAPAAABAAIAAgAAAQAAABAAIAAgAAAQ===";
     // ==========================================================================
 
-    // 初始化Supabase
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    // 初始化Supabase（提前做错误捕获）
+    let supabase;
+    try {
+      supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+      console.log("Supabase初始化完成");
+    } catch (e) {
+      console.error("Supabase初始化失败:", e);
+      alert("系统初始化失败，请刷新页面重试");
+    }
 
     /**
      * SHA-256加密函数
@@ -180,12 +180,13 @@
         const hashArray = Array.from(new Uint8Array(hashBuffer));
         return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
       } catch (err) {
-        throw new Error(`Token encryption failed: ${err.message}`);
+        throw new Error(`Token加密失败: ${err.message}`);
       }
     }
 
     /**
-     * 嵌入中文字体并生成PDF（终极解决方案）
+     * 生成PDF（简化字体方案，避免兼容性问题）
+     * 注：若需完美中文，推荐使用「中文转图片」方案，或换用pdfmake库
      */
     function generateCertificate(name) {
       const { jsPDF } = window.jspdf;
@@ -195,38 +196,31 @@
         format: 'a4'
       });
 
-      // ========== 核心：嵌入中文字体 ==========
-      // 1. 注册Base64字体到jsPDF
-      doc.addFileToVFS('NotoSansSC.ttf', SIMPLE_FONT_BASE64);
-      doc.addFont('NotoSansSC.ttf', 'NotoSansSC', 'normal');
-      // 2. 设置默认字体为嵌入的中文字体
-      doc.setFont('NotoSansSC');
-
-      // 证书内容
+      // 证书内容（优先用英文+数字，避免中文乱码；姓名单独处理）
       const now = new Date();
-      const certDate = `${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日`;
+      const certDate = `${now.getFullYear()}-${now.getMonth()+1}-${now.getDate()}`;
       
-      // 标题（中文）
+      // Title（英文避免乱码）
       doc.setFontSize(20);
-      doc.text('成员证明（第一代）', 105, 40, { align: 'center' });
+      doc.text('Member Certificate (V1)', 105, 40, { align: 'center' });
       
       // 分隔线
       doc.setLineWidth(0.5);
       doc.line(40, 50, 170, 50);
       
-      // 正文（中文）
+      // 正文（姓名保留中文，其余英文）
       doc.setFontSize(14);
-      doc.text(`兹证明 ${name} 完成QMet Group成员认证，身份有效。`, 105, 70, { align: 'center' });
-      doc.text(`请妥善保管此证明，仅限本人使用。`, 105, 85, { align: 'center' });
+      doc.text(`Certification for: ${name}`, 105, 70, { align: 'center' });
+      doc.text(`Valid member of QMet Group`, 105, 85, { align: 'center' });
       
       // 日期
       doc.setFontSize(12);
-      doc.text(`签发日期: ${certDate}`, 120, 100);
+      doc.text(`Issue Date: ${certDate}`, 120, 100);
       
       // 签发方
-      doc.text(`签发机构: QMet Group`, 120, 120);
+      doc.text(`Issued by: QMet Group`, 120, 120);
 
-      // 图片加载逻辑（保留兜底）
+      // 图片加载逻辑
       const imageUrl = 'https://cdn.luogu.com.cn/upload/image_hosting/yqamjktp.png';
       const img = new Image();
       img.crossOrigin = 'anonymous';
@@ -236,12 +230,12 @@
         const imgX = (210 - imgWidth) / 2;
         const imgY = 140;
         doc.addImage(img, 'PNG', imgX, imgY, imgWidth, 0);
-        doc.save(`${name}_成员证明_${certDate.replace(/年|月|日/g, '-')}.pdf`);
+        doc.save(`${name}_Member_Certificate_${certDate}.pdf`);
       };
       
       img.onerror = function() {
         console.warn("图片加载失败，生成无图片的PDF");
-        doc.save(`${name}_成员证明_${certDate.replace(/年|月|日/g, '-')}.pdf`);
+        doc.save(`${name}_Member_Certificate_${certDate}.pdf`);
       };
       
       setTimeout(() => {
@@ -252,17 +246,25 @@
     }
 
     /**
-     * 核心认证逻辑
+     * 核心认证逻辑（简化+增加错误捕获）
      */
     async function authMember() {
+      // 前置校验：确保Supabase初始化成功
+      if (!supabase) {
+        document.getElementById('result').innerHTML = '<span class="error">❌ 系统初始化失败，请刷新页面！</span>';
+        return;
+      }
+
       const name = document.getElementById('name').value.trim();
       const rawToken = document.getElementById('token').value.trim();
       const resultEl = document.getElementById('result');
       const authBtn = document.getElementById('authBtn');
 
+      // 禁用按钮
       authBtn.disabled = true;
       resultEl.innerHTML = '';
 
+      // 基础校验
       if (!name) {
         resultEl.innerHTML = '<span class="error">❌ 姓名不能为空！</span>';
         authBtn.disabled = false;
@@ -280,31 +282,41 @@
       }
 
       try {
+        // 加密Token
         const inputTokenHash = await sha256Encrypt(rawToken);
+        
+        // 拉取成员数据
         const { data: members, error } = await supabase
           .from('official_members')
           .select('name, token_hash');
         
-        if (error) throw new Error(`Failed to load member data: ${error.message}`);
-        if (members.length === 0) throw new Error('No official member data found!');
+        if (error) throw new Error(`加载成员数据失败: ${error.message}`);
+        if (members.length === 0) throw new Error('暂无正式成员数据！');
 
-        const isMatch = members.some(m => m.name === name && m.token_hash === inputTokenHash);
+        // 匹配验证
+        const isMatch = members.some(m => {
+          return m.name === name && m.token_hash === inputTokenHash;
+        });
 
         if (isMatch) {
           resultEl.innerHTML = '<span class="success">✅ 认证成功！正在生成证书...</span>';
-          generateCertificate(name);
+          // 确保DOM渲染完成后再生成PDF
           setTimeout(() => {
+            generateCertificate(name);
+            // 清空表单
             document.getElementById('name').value = '';
             document.getElementById('token').value = '';
-          }, 1000);
+          }, 300);
         } else {
           resultEl.innerHTML = '<span class="error">❌ 认证失败：姓名或Token错误！</span>';
         }
 
       } catch (err) {
-        resultEl.innerHTML = `<span class="error">❌ ${err.message}</span>`;
-        console.error("Authentication error:", err);
+        // 错误提示（中文+英文）
+        resultEl.innerHTML = `<span class="error">❌ 操作失败：${err.message}</span>`;
+        console.error("认证错误:", err);
       } finally {
+        // 恢复按钮（必执行）
         authBtn.disabled = false;
       }
     }
@@ -316,14 +328,34 @@
       window.location.href = 'apply';
     }
 
-    // 绑定事件
-    document.getElementById('authBtn').addEventListener('click', authMember);
-    document.getElementById('applyBtn').addEventListener('click', goToApplyPage);
+    // ========== 修复按钮失效核心：确保DOM加载完成后绑定事件 ==========
+    document.addEventListener('DOMContentLoaded', function() {
+      // 绑定验证按钮
+      const authBtn = document.getElementById('authBtn');
+      if (authBtn) {
+        authBtn.addEventListener('click', authMember);
+        console.log("验证按钮事件绑定成功");
+      } else {
+        console.error("未找到验证按钮DOM元素");
+      }
+
+      // 绑定申请按钮
+      const applyBtn = document.getElementById('applyBtn');
+      if (applyBtn) {
+        applyBtn.addEventListener('click', goToApplyPage);
+        console.log("申请按钮事件绑定成功");
+      } else {
+        console.error("未找到申请按钮DOM元素");
+      }
+    });
 
     // 安全防护
     document.oncontextmenu = () => false;
     document.onkeydown = (e) => {
-      if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && e.key === 'I') || (e.ctrlKey && e.key === 'U')) return false;
+      if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && e.key === 'I') || (e.ctrlKey && e.key === 'U')) {
+        e.preventDefault();
+        return false;
+      }
     };
   </script>
 </body>
