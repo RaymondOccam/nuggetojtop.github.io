@@ -59,18 +59,24 @@
       font-weight: 500;
       margin-top: 2rem;
     }
-    .refresh-btn {
+    /* 修复按钮样式：确保可点击、有交互反馈 */
+    #refreshBtn {
       margin-top: 1.5rem;
       padding: 0.7rem 1.5rem;
-      background-color: #e9ecef;
-      color: #495057;
+      background-color: #0078d4;
+      color: white;
       border: none;
       border-radius: 6px;
       cursor: pointer;
       font-size: 14px;
+      font-weight: 500;
     }
-    .refresh-btn:hover {
-      background-color: #dee2e6;
+    #refreshBtn:hover {
+      background-color: #005a9e;
+      transform: translateY(-2px);
+    }
+    #refreshBtn:active {
+      transform: translateY(0);
     }
     .back-link {
       display: inline-block;
@@ -82,13 +88,20 @@
     .back-link:hover {
       text-decoration: underline;
     }
+    /* 加载提示样式 */
+    .loading {
+      color: #0078d4;
+      font-size: 16px;
+      margin-top: 2rem;
+    }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>认证申请审核状态</h1>
-    <div id="auditInfo"></div>
-    <button class="refresh-btn" id="refreshBtn">刷新审核状态</button>
+    <div id="auditInfo" class="loading">正在查询审核状态...</div>
+    <!-- 修复按钮ID和样式绑定，确保可点击 -->
+    <button id="refreshBtn">刷新审核状态</button>
     <a href="../index.html" class="back-link">← 返回认证页面</a>
   </div>
 
@@ -97,67 +110,92 @@
     // Supabase配置
     const SUPABASE_URL = "https://qcxrfubkltphtvdfiikp.supabase.co";
     const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFjeHJmdWJrbHRwaHR2ZGZpaWtwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY1NzkxOTMsImV4cCI6MjA4MjE1NTE5M30.v6Pd4R9wDdl5Ms8JfFu6wDneuO2_pj5LB8frEN1d6q8";
+    
+    // 初始化Supabase（增加错误兜底）
     let supabase;
-
     try {
       supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     } catch (e) {
       document.getElementById('auditInfo').innerHTML = '<div class="error">❌ 系统初始化失败</div>';
       console.error("Supabase初始化失败:", e);
-      return;
     }
 
-    // 获取URL中的8位审核编号
+    // 修复：获取URL参数函数（兼容空值/非8位编号）
     function getCheckId() {
       const urlParams = new URLSearchParams(window.location.search);
-      return urlParams.get('checkId') || '';
+      const checkId = urlParams.get('checkId') || '';
+      // 验证是否为8位数字
+      if (checkId.length !== 8 || isNaN(checkId)) {
+        return '';
+      }
+      return checkId;
     }
 
-    // 格式化时间
+    // 格式化时间（修复时间显示异常）
     function formatTime(isoTime) {
+      if (!isoTime) return '未知时间';
       return new Date(isoTime).toLocaleString('zh-CN', {
         year: 'numeric', month: '2-digit', day: '2-digit',
         hour: '2-digit', minute: '2-digit'
       });
     }
 
-    // 查询并展示审核状态（核心函数）
+    // 核心修复：查询审核状态函数（增加兜底、错误处理）
     async function queryAuditStatus() {
+      const auditInfoEl = document.getElementById('auditInfo');
+      // 重置为加载状态
+      auditInfoEl.innerHTML = '<div class="loading">正在查询审核状态...</div>';
+      
       const checkId = getCheckId();
-      const el = document.getElementById('auditInfo');
+      
+      // 1. 检查8位编号是否有效
+      if (!checkId) {
+        auditInfoEl.innerHTML = '<div class="error">❌ 无效的8位审核编号（URL参数错误）</div>';
+        return;
+      }
 
-      // 验证8位编号
-      if (!checkId || checkId.length !== 8 || isNaN(checkId)) {
-        el.innerHTML = '<div class="error">❌ 无效的8位审核编号</div>';
+      // 2. 检查Supabase是否初始化成功
+      if (!supabase) {
+        auditInfoEl.innerHTML = '<div class="error">❌ 数据库连接失败，请刷新页面</div>';
         return;
       }
 
       try {
-        // 查询审核记录
-        const { data, error } = await supabase
+        // 3. 查询数据库（增加超时控制）
+        const queryPromise = supabase
           .from('audit_records')
           .select('*')
           .eq('check_id', checkId)
           .single();
+        
+        // 超时兜底（5秒）
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('查询超时')), 5000);
+        });
 
+        const { data, error } = await Promise.race([queryPromise, timeoutPromise]);
+
+        // 4. 处理查询错误
         if (error || !data) {
-          el.innerHTML = '<div class="error">❌ 未查询到该审核记录</div>';
+          auditInfoEl.innerHTML = '<div class="error">❌ 未查询到该审核记录</div>';
           return;
         }
 
-        // 状态样式和文案映射
+        // 5. 状态映射（确保状态显示正常）
         const statusConfig = {
           '待审核': { class: 'status-wait', text: '待审核', tip: '管理员将尽快审核，请耐心等待' },
           '通过': { class: 'status-approve', text: '审核通过', tip: '你可返回认证页面生成证书' },
-          '拒绝': { class: 'status-reject', text: '审核拒绝', tip: '请确认Token正确或联系管理员' }
+          '拒绝': { class: 'status-reject', text: '审核拒绝', tip: '请确认Token正确或联系管理员' },
+          // 兜底：未知状态
+          '': { class: 'status-wait', text: '状态未知', tip: '请联系管理员确认' }
         };
-        const config = statusConfig[data.status] || statusConfig['待审核'];
+        const config = statusConfig[data.status] || statusConfig[''];
 
-        // 展示核心信息
-        el.innerHTML = `
+        // 6. 渲染审核状态（确保所有字段都有兜底值）
+        auditInfoEl.innerHTML = `
           <div class="info-item">
             <span class="info-label">用户名：</span>
-            <span>${data.username}</span>
+            <span>${data.username || '未知'}</span>
           </div>
           <div class="info-item">
             <span class="info-label">提交时间：</span>
@@ -171,20 +209,23 @@
         `;
 
       } catch (err) {
-        el.innerHTML = '<div class="error">❌ 查询失败，请点击刷新重试</div>';
+        // 7. 捕获所有异常，确保状态显示
+        auditInfoEl.innerHTML = `<div class="error">❌ 查询失败：${err.message}（点击刷新重试）</div>`;
         console.error("查询审核状态错误:", err);
       }
     }
 
-    // 页面加载时查询状态 + 绑定刷新按钮
+    // 修复：页面加载+按钮点击事件绑定（确保执行）
     document.addEventListener('DOMContentLoaded', function() {
-      // 初始查询
+      // 页面加载时立即查询
       queryAuditStatus();
 
-      // 刷新按钮事件
+      // 绑定刷新按钮（确保按钮存在再绑定）
       const refreshBtn = document.getElementById('refreshBtn');
       if (refreshBtn) {
         refreshBtn.addEventListener('click', queryAuditStatus);
+      } else {
+        console.error("刷新按钮未找到");
       }
     });
   </script>
