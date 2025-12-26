@@ -4,11 +4,7 @@
   <meta charset="UTF-8">
   <title>QMet Group 管理员后台</title>
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       max-width: 1000px;
       margin: 2rem auto;
@@ -22,111 +18,140 @@
       border-radius: 12px;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
     }
-    h1 {
-      color: #212529;
-      margin-bottom: 2rem;
-      text-align: center;
-      font-size: 24px;
-    }
-    /* 表格样式 - 适配管理员查看所有申请 */
-    .apply-table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-bottom: 2rem;
-    }
-    .apply-table th, .apply-table td {
-      padding: 1rem;
-      text-align: left;
-      border-bottom: 1px solid #e9ecef;
-    }
-    .apply-table th {
-      background-color: #f8f9fa;
-      font-weight: 600;
-      color: #212529;
-    }
-    .apply-table tr:hover {
-      background-color: #f8f9fa;
-    }
-    /* 状态标签样式 */
-    .status-tag {
-      padding: 0.3rem 0.8rem;
-      border-radius: 4px;
-      color: white;
-      font-size: 12px;
-      font-weight: 500;
-    }
+    h1 { color: #212529; margin-bottom: 2rem; text-align: center; font-size: 24px; }
+
+    .apply-table { width: 100%; border-collapse: collapse; margin-bottom: 2rem; }
+    .apply-table th, .apply-table td { padding: 1rem; text-align: left; border-bottom: 1px solid #e9ecef; }
+    .apply-table th { background-color: #f8f9fa; font-weight: 600; color: #212529; }
+    .apply-table tr:hover { background-color: #f8f9fa; }
+
+    .status-tag { padding: 0.3rem 0.8rem; border-radius: 4px; color: white; font-size: 12px; font-weight: 500; }
     .status-wait { background-color: #ffc107; }
     .status-approve { background-color: #28a745; }
     .status-reject { background-color: #dc3545; }
-    /* 操作按钮样式 */
-    .action-btn {
-      padding: 0.5rem 1rem;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 12px;
-      font-weight: 500;
-      margin-right: 0.5rem;
+
+    .action-btn { padding: 0.5rem 1rem; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 500; margin-right: 0.5rem; }
+    .approve-btn { background-color: #28a745; color: white; }
+    .reject-btn { background-color: #dc3545; color: white; }
+
+    .refresh-btn { background-color: #0078d4; color: white; padding: 0.7rem 1.5rem; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; margin-bottom: 1rem; }
+    .refresh-btn:hover { background-color: #005a9e; }
+
+    .empty-tip, .loading-tip, .error-tip { text-align: center; padding: 2rem; font-size: 16px; color: #6c757d; }
+    .error-tip { color: #dc3545; }
+    .loading-tip { color: #0078d4; }
+
+    /* 登录遮罩 */
+    .login-mask {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.35);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 999;
     }
-    .approve-btn {
-      background-color: #28a745;
-      color: white;
+    .login-card {
+      background: #fff; padding: 1.8rem; border-radius: 10px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+      width: 320px;
     }
-    .reject-btn {
-      background-color: #dc3545;
-      color: white;
+    .login-card h2 { margin-bottom: 1rem; font-size: 18px; text-align: center; }
+    .login-card label { display: block; margin-bottom: 0.5rem; color: #333; }
+    .login-card input {
+      width: 100%; padding: 0.6rem 0.8rem;
+      border: 1px solid #ced4da; border-radius: 6px;
+      margin-bottom: 0.8rem; font-size: 14px;
     }
-    .refresh-btn {
-      background-color: #0078d4;
-      color: white;
-      padding: 0.7rem 1.5rem;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 14px;
-      margin-bottom: 1rem;
+    .login-card button {
+      width: 100%; padding: 0.7rem;
+      background: #0078d4; color: #fff; border: none;
+      border-radius: 6px; cursor: pointer; font-size: 14px;
     }
-    .refresh-btn:hover {
-      background-color: #005a9e;
-    }
-    /* 空数据/加载/错误提示 */
-    .empty-tip, .loading-tip, .error-tip {
-      text-align: center;
-      padding: 2rem;
-      font-size: 16px;
-      color: #6c757d;
-    }
-    .error-tip {
-      color: #dc3545;
-    }
-    .loading-tip {
-      color: #0078d4;
-    }
+    .login-card button:hover { background: #005a9e; }
+    .login-error { color: #dc3545; font-size: 13px; min-height: 18px; margin-bottom: 0.5rem; text-align: center; }
   </style>
 </head>
 <body>
-  <div class="container">
+  <!-- 登录遮罩 -->
+  <div class="login-mask" id="loginMask">
+    <div class="login-card">
+      <h2>管理员登录</h2>
+      <label for="adminPassword">请输入管理员密码</label>
+      <input type="password" id="adminPassword" placeholder="管理员密码">
+      <div class="login-error" id="loginError"></div>
+      <button id="loginBtn">登录</button>
+    </div>
+  </div>
+
+  <div class="container" id="appContainer" style="display:none;">
     <h1>认证申请管理后台</h1>
-    <!-- 刷新申请列表按钮 -->
     <button class="refresh-btn" id="refreshListBtn">刷新申请列表</button>
-    <!-- 申请列表表格 -->
     <div id="applyListContainer" class="loading-tip">正在加载申请列表...</div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
   <script>
-    // Supabase配置（和用户端一致）
     const SUPABASE_URL = "https://qcxrfubkltphtvdfiikp.supabase.co";
     const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFjeHJmdWJrbHRwaHR2ZGZpaWtwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY1NzkxOTMsImV4cCI6MjA4MjE1NTE5M30.v6Pd4R9wDdl5Ms8JfFu6wDneuO2_pj5LB8frEN1d6q8";
 
+    // 仅保存哈希，不暴露明文密码。此值为 SHA-256("5ifsEZKn") 的 16 进制。
+    const ADMIN_PASSWORD_HASH = "9c1e5f2a907cdf10d617e976612b180da0db022644f55e5f4a2b90e1091cf07a";
+
     let supabase;
+
     try {
-      // 初始化Supabase（管理员端同样需要）
       supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     } catch (e) {
       document.getElementById('applyListContainer').innerHTML = '<div class="error-tip">❌ 系统初始化失败：' + e.message + '</div>';
       console.error("Supabase初始化失败:", e);
     }
+
+    const loginMask = document.getElementById('loginMask');
+    const appContainer = document.getElementById('appContainer');
+    const loginBtn = document.getElementById('loginBtn');
+    const loginError = document.getElementById('loginError');
+    const passwordInput = document.getElementById('adminPassword');
+    const AUTH_FLAG = "QMET_ADMIN_AUTH_OK";
+
+    function toHex(buffer) {
+      return Array.from(new Uint8Array(buffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    async function hashPassword(pwd) {
+      const enc = new TextEncoder().encode(pwd);
+      const digest = await crypto.subtle.digest('SHA-256', enc);
+      return toHex(digest);
+    }
+
+    function setAuthed() {
+      sessionStorage.setItem(AUTH_FLAG, "1");
+      loginMask.style.display = "none";
+      appContainer.style.display = "block";
+    }
+
+    function isAuthed() {
+      return sessionStorage.getItem(AUTH_FLAG) === "1";
+    }
+
+    async function handleLogin() {
+      const pwd = passwordInput.value || "";
+      loginError.textContent = "";
+      try {
+        const hashed = await hashPassword(pwd);
+        if (hashed === ADMIN_PASSWORD_HASH) {
+          setAuthed();
+          loadApplyList();
+        } else {
+          loginError.textContent = "密码错误，请重试";
+        }
+      } catch (err) {
+        console.error("登录校验失败:", err);
+        loginError.textContent = "校验失败，请重试";
+      }
+    }
+
+    passwordInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') handleLogin();
+    });
+    loginBtn.addEventListener('click', handleLogin);
 
     // 格式化时间
     function formatTime(isoTime) {
@@ -137,7 +162,6 @@
       });
     }
 
-    // 核心功能1：加载所有申请列表（解决admin不显示申请问题）
     async function loadApplyList() {
       const container = document.getElementById('applyListContainer');
       container.innerHTML = '<div class="loading-tip">正在加载申请列表...</div>';
@@ -146,23 +170,24 @@
         container.innerHTML = '<div class="error-tip">❌ 数据库连接失败，请刷新页面</div>';
         return;
       }
+      if (!isAuthed()) {
+        container.innerHTML = '<div class="error-tip">❌ 请先完成管理员登录</div>';
+        return;
+      }
 
       try {
-        // 查询所有申请记录（按提交时间倒序）
         const { data, error } = await supabase
           .from('audit_records')
           .select('*')
-          .order('apply_time', { ascending: false }); // 最新提交的排在前面
+          .order('apply_time', { ascending: false });
 
         if (error) throw new Error(error.message);
 
-        // 无申请记录时的提示
         if (!data || data.length === 0) {
           container.innerHTML = '<div class="empty-tip">暂无认证申请记录</div>';
           return;
         }
 
-        // 渲染申请列表表格
         let tableHtml = `
           <table class="apply-table">
             <thead>
@@ -177,20 +202,12 @@
             <tbody>
         `;
 
-        // 遍历所有申请记录
         data.forEach(item => {
-          // 状态标签样式
           let statusClass = 'status-wait';
           let statusText = '待审核';
-          if (item.status === '通过') {
-            statusClass = 'status-approve';
-            statusText = '审核通过';
-          } else if (item.status === '拒绝') {
-            statusClass = 'status-reject';
-            statusText = '审核拒绝';
-          }
+          if (item.status === '通过') { statusClass = 'status-approve'; statusText = '审核通过'; }
+          else if (item.status === '拒绝') { statusClass = 'status-reject'; statusText = '审核拒绝'; }
 
-          // 操作按钮（已审核的禁用操作）
           let actionBtns = '';
           if (item.status === '待审核') {
             actionBtns = `
@@ -201,7 +218,6 @@
             actionBtns = '<span style="color:#6c757d;font-size:12px;">已审核</span>';
           }
 
-          // 拼接行数据
           tableHtml += `
             <tr>
               <td>${item.check_id || '未知'}</td>
@@ -213,12 +229,7 @@
           `;
         });
 
-        tableHtml += `
-            </tbody>
-          </table>
-        `;
-
-        // 渲染到页面
+        tableHtml += `</tbody></table>`;
         container.innerHTML = tableHtml;
 
       } catch (err) {
@@ -227,16 +238,10 @@
       }
     }
 
-    // 核心功能2：更新审核状态（管理员操作）
     async function updateAuditStatus(checkId, status) {
-      if (!confirm(`确认将编号${checkId}的申请设置为【${status}】吗？`)) {
-        return;
-      }
-
-      if (!supabase) {
-        alert("数据库连接失败，请刷新页面");
-        return;
-      }
+      if (!isAuthed()) { alert("请先完成管理员登录"); return; }
+      if (!confirm(`确认将编号${checkId}的申请设置为【${status}】吗？`)) return;
+      if (!supabase) { alert("数据库连接失败，请刷新页面"); return; }
 
       try {
         const { error } = await supabase
@@ -247,27 +252,21 @@
         if (error) throw new Error(error.message);
 
         alert(`审核状态更新成功！编号${checkId} → ${status}`);
-        // 刷新列表
         loadApplyList();
-
       } catch (err) {
         alert(`更新失败：${err.message}`);
         console.error("更新审核状态错误:", err);
       }
     }
 
-    // 绑定事件：页面加载+刷新按钮
+    // 绑定事件
     document.addEventListener('DOMContentLoaded', function() {
-      // 页面加载时自动加载申请列表
-      loadApplyList();
-
-      // 绑定刷新列表按钮
-      const refreshBtn = document.getElementById('refreshListBtn');
-      if (refreshBtn) {
-        refreshBtn.addEventListener('click', loadApplyList);
+      if (isAuthed()) {
+        setAuthed();
+        loadApplyList();
       }
-
-      // 把更新状态函数挂载到window，方便表格内按钮调用
+      const refreshBtn = document.getElementById('refreshListBtn');
+      if (refreshBtn) refreshBtn.addEventListener('click', loadApplyList);
       window.updateAuditStatus = updateAuditStatus;
     });
   </script>
